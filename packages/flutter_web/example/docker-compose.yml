@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # OvenMediaEngine - WebRTC Streaming Server
+  ovenmediaengine:
+    image: airensoft/ovenmediaengine:latest
+    container_name: ome-server
+    ports:
+      - "1935:1935"      # RTMP input
+      - "3333:3333"      # WebRTC signaling (WebSocket)
+      - "3478:3478/udp"  # TURN/STUN
+      - "8080:8080"      # HLS output
+      - "9000:9000"      # Admin API
+    environment:
+      - OME_HOST_IP=0.0.0.0
+    networks:
+      - ovenplayer-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Flutter Web Example Application
+  flutter-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ovenplayer-flutter-web
+    ports:
+      - "8090:80"
+    depends_on:
+      - ovenmediaengine
+    networks:
+      - ovenplayer-network
+    restart: unless-stopped
+    environment:
+      - DEFAULT_WEBRTC_URL=ws://ovenmediaengine:3333/app/stream
+
+networks:
+  ovenplayer-network:
+    driver: bridge

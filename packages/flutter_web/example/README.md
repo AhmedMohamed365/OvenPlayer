@@ -10,6 +10,28 @@ This example demonstrates how to use the OvenPlayer Flutter Web package to play 
 - ✅ Loading different streams dynamically
 - ✅ Event handling (state changes, errors, etc.)
 - ✅ Example streams (WebRTC, HLS, DASH)
+- ✅ **Docker setup with OvenMediaEngine for testing**
+
+## Quick Start with Docker 🐳
+
+The easiest way to test the example with a real WebRTC stream:
+
+```bash
+# Start both the Flutter app and OvenMediaEngine
+./start.sh
+
+# Or manually:
+docker-compose up -d
+```
+
+Then:
+1. Open http://localhost:8090 in your browser
+2. Push a stream to `rtmp://localhost:1935/app/stream`
+3. The WebRTC URL `ws://localhost:3333/app/stream` is ready to use!
+
+**Change the URL anytime** - just edit the "Stream URL" field in the app (no rebuild needed!).
+
+For detailed Docker setup instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
 
 ## Running the Example
 
