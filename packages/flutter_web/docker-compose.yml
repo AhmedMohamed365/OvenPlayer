@@ -1,19 +1,16 @@
-version: '3.8'
-
 services:
   # Flutter Web Demo Application
   flutter-demo:
     image: ghcr.io/cirruslabs/flutter:stable
     container_name: ovenplayer_flutter_demo
-    working_dir: /app
+    working_dir: /app/example
     volumes:
-      - ./:/app
+      - ./:/app:Z
       - flutter-pub-cache:/root/.pub-cache
     ports:
       - "8080:8080"
     command: >
       sh -c "
-      cd example &&
       flutter pub get &&
       flutter run -d web-server --web-port=8080 --web-hostname=0.0.0.0
       "

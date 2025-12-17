@@ -132,12 +132,12 @@ class OvenPlayerJSHelper {
   }
 
   /// Convert Dart List to JSArray
-  static JSArray _listToJSArray(List list) {
-    final jsArray = JSArray<JSAny>();
+  static JSArray<JSAny> _listToJSArray(List list) {
+    final dartList = <JSAny>[];
     for (var item in list) {
-      jsArray.push(_convertToJSAny(item));
+      dartList.add(_convertToJSAny(item));
     }
-    return jsArray;
+    return dartList.toJS;
   }
 
   /// Convert JSAny to Dart value
@@ -162,15 +162,12 @@ class OvenPlayerJSHelper {
   /// Convert JSObject to Dart Map
   static Map<String, dynamic> jsObjectToMap(JSObject obj) {
     final map = <String, dynamic>{};
-    final keys = (obj as JSObject).keys();
+    final keys = _getObjectKeys(obj).toDart;
     
     for (var i = 0; i < keys.length; i++) {
-      final key = keys.getProperty(i.toJS);
-      if (key != null) {
-        final keyStr = (key as JSString).toDart;
-        final value = obj.getProperty(key);
-        map[keyStr] = jsAnyToDart(value);
-      }
+      final keyStr = (keys[i] as JSString).toDart;
+      final value = obj.getProperty(keyStr.toJS);
+      map[keyStr] = jsAnyToDart(value);
     }
     
     return map;
@@ -181,3 +178,7 @@ class OvenPlayerJSHelper {
     return web.document.getElementById(id);
   }
 }
+
+/// Get object keys using Object.keys()
+@JS('Object.keys')
+external JSArray<JSString> _getObjectKeys(JSObject obj);

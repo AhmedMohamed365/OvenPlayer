@@ -3,6 +3,7 @@ library;
 
 import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
+import 'package:web/web.dart' as web;
 import 'ovenplayer_config.dart';
 import 'ovenplayer_events.dart';
 import 'ovenplayer_js_interop.dart';
@@ -41,7 +42,7 @@ class OvenPlayerController extends ChangeNotifier {
   /// Container ID
   String? get containerId => _containerId;
 
-  /// Initialize the player with a container ID
+  /// Initialize the player with a container ID (looks up element in DOM)
   void initialize(String containerId) {
     if (_isInitialized) {
       debugPrint('OvenPlayer already initialized');
@@ -63,17 +64,7 @@ class OvenPlayerController extends ChangeNotifier {
         return;
       }
 
-      // Convert config to JS object
-      final jsConfig = OvenPlayerJSHelper.mapToJSObject(config.toJson());
-
-      // Create player instance
-      _playerInstance = OvenPlayerJS.create(element.jsify(), jsConfig);
-
-      // Set up event listeners
-      _setupEventListeners();
-
-      _isInitialized = true;
-      notifyListeners();
+      _initializeWithElementInternal(element);
     } catch (e) {
       final errorMsg = 'Error initializing OvenPlayer: $e';
       debugPrint(errorMsg);
@@ -83,6 +74,43 @@ class OvenPlayerController extends ChangeNotifier {
       ));
       rethrow;
     }
+  }
+
+  /// Initialize the player with a direct element reference
+  void initializeWithElement(web.Element element) {
+    if (_isInitialized) {
+      debugPrint('OvenPlayer already initialized');
+      return;
+    }
+
+    _containerId = element.id;
+
+    try {
+      _initializeWithElementInternal(element);
+    } catch (e) {
+      final errorMsg = 'Error initializing OvenPlayer: $e';
+      debugPrint(errorMsg);
+      onError?.call(OvenPlayerError(
+        code: -2,
+        message: errorMsg,
+      ));
+      rethrow;
+    }
+  }
+
+  /// Internal initialization with element
+  void _initializeWithElementInternal(web.Element element) {
+    // Convert config to JS object
+    final jsConfig = OvenPlayerJSHelper.mapToJSObject(config.toJson());
+
+    // Create player instance
+    _playerInstance = OvenPlayerJS.create(element.jsify()!, jsConfig);
+
+    // Set up event listeners
+    _setupEventListeners();
+
+    _isInitialized = true;
+    notifyListeners();
   }
 
   /// Reinitialize the player (useful for recovering from errors)
@@ -118,8 +146,26 @@ class OvenPlayerController extends ChangeNotifier {
     // State changed event
     final stateChangedListener = ((JSAny? data) {
       if (data != null && onStateChanged != null) {
-        final state = _parseState((data as JSString).toDart);
-        onStateChanged?.call(state);
+        try {
+          String stateStr;
+          if (data.typeofEquals('string')) {
+            stateStr = (data as JSString).toDart;
+          } else {
+            // It might be a JSObject with a state property or the state itself
+            final dartData = OvenPlayerJSHelper.jsAnyToDart(data);
+            if (dartData is String) {
+              stateStr = dartData;
+            } else if (dartData is Map<String, dynamic> && dartData.containsKey('state')) {
+              stateStr = dartData['state'].toString();
+            } else {
+              stateStr = dartData.toString();
+            }
+          }
+          final state = _parseState(stateStr);
+          onStateChanged?.call(state);
+        } catch (e) {
+          debugPrint('Error parsing state: $e');
+        }
       }
     }).toJS;
     _eventListeners['stateChanged'] = stateChangedListener;
@@ -318,12 +364,11 @@ class OvenPlayerController extends ChangeNotifier {
     final jsLevels = _playerInstance?.getQualityLevels();
     
     if (jsLevels != null) {
-      for (var i = 0; i < jsLevels.length; i++) {
-        final jsLevel = jsLevels.getProperty(i.toJS);
-        if (jsLevel != null) {
-          final levelData = OvenPlayerJSHelper.jsObjectToMap(jsLevel as JSObject);
-          levels.add(OvenPlayerQualityLevel.fromJson(levelData));
-        }
+      final levelsList = jsLevels.toDart;
+      for (var i = 0; i < levelsList.length; i++) {
+        final jsLevel = levelsList[i];
+        final levelData = OvenPlayerJSHelper.jsObjectToMap(jsLevel);
+        levels.add(OvenPlayerQualityLevel.fromJson(levelData));
       }
     }
     

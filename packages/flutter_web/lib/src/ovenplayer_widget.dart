@@ -30,6 +30,8 @@ class OvenPlayerWidget extends StatefulWidget {
 
 class _OvenPlayerWidgetState extends State<OvenPlayerWidget> {
   late String _viewId;
+  web.HTMLDivElement? _element;
+  bool _isRegistered = false;
 
   @override
   void initState() {
@@ -37,22 +39,29 @@ class _OvenPlayerWidgetState extends State<OvenPlayerWidget> {
     _viewId = 'ovenplayer-${DateTime.now().millisecondsSinceEpoch}';
     
     // Register the view factory for the HTML element
-    // ignore: undefined_prefixed_name
-    ui_web.platformViewRegistry.registerViewFactory(
-      _viewId,
-      (int viewId) {
-        final element = web.document.createElement('div') as web.HTMLDivElement;
-        element.id = _viewId;
-        element.style.width = '100%';
-        element.style.height = '100%';
-        return element;
-      },
-    );
-
-    // Initialize the player after the widget is built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.controller.initialize(_viewId);
-    });
+    if (!_isRegistered) {
+      // ignore: undefined_prefixed_name
+      ui_web.platformViewRegistry.registerViewFactory(
+        _viewId,
+        (int viewId) {
+          _element = web.document.createElement('div') as web.HTMLDivElement;
+          _element!.id = _viewId;
+          _element!.style.width = '100%';
+          _element!.style.height = '100%';
+          _element!.style.backgroundColor = 'black';
+          
+          // Initialize player after element is created
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (_element != null) {
+              widget.controller.initializeWithElement(_element!);
+            }
+          });
+          
+          return _element!;
+        },
+      );
+      _isRegistered = true;
+    }
   }
 
   @override

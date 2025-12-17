@@ -46,20 +46,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     _controller = OvenPlayerController(
       config: OvenPlayerConfig(
         sources: [
-          // Example WebRTC source
+          // WebRTC source from OvenMediaEngine server
           OvenPlayerSource(
-            label: 'WebRTC',
+            label: 'WebRTC Live',
             type: 'webrtc',
-            file: 'wss://demo.ovenplayer.com/app/stream',
-          ),
-          // Example HLS source as fallback
-          OvenPlayerSource(
-            label: 'HLS',
-            type: 'hls',
-            file: 'https://demo.ovenplayer.com/playlist.m3u8',
+            file: 'ws://100.97.40.30:3333/app/ppe_stream',
           ),
         ],
-        autoStart: false,
+        autoStart: true,
         autoFallback: true,
         mute: false,
         volume: 100,
@@ -136,6 +130,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   }
 
   String _formatDuration(double seconds) {
+    if (seconds.isInfinite || seconds.isNaN || seconds < 0) {
+      return 'LIVE';
+    }
     final duration = Duration(seconds: seconds.toInt());
     final minutes = duration.inMinutes;
     final secs = duration.inSeconds % 60;
@@ -151,24 +148,19 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       ),
       body: Column(
         children: [
-          // Player container
+          // Player container - takes most of the space
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Container(
               color: Colors.black,
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: OvenPlayerWidget(controller: _controller),
-                ),
-              ),
+              child: OvenPlayerWidget(controller: _controller),
             ),
           ),
 
-          // Status and controls
+          // Status and controls - scrollable
           Expanded(
-            flex: 1,
-            child: Padding(
+            flex: 2,
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,14 +170,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                     _statusText,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
                   // Time display
                   Text(
                     'Time: ${_formatDuration(_currentPosition)} / ${_formatDuration(_duration)}',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
                   // Playback controls
                   Row(
@@ -193,28 +185,25 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.play_arrow),
-                        iconSize: 48,
+                        iconSize: 36,
                         onPressed: () => _controller.play(),
                         tooltip: 'Play',
                       ),
-                      const SizedBox(width: 16),
                       IconButton(
                         icon: const Icon(Icons.pause),
-                        iconSize: 48,
+                        iconSize: 36,
                         onPressed: () => _controller.pause(),
                         tooltip: 'Pause',
                       ),
-                      const SizedBox(width: 16),
                       IconButton(
                         icon: const Icon(Icons.stop),
-                        iconSize: 48,
+                        iconSize: 36,
                         onPressed: () => _controller.stop(),
                         tooltip: 'Stop',
                       ),
-                      const SizedBox(width: 16),
                       IconButton(
                         icon: Icon(_isMuted ? Icons.volume_off : Icons.volume_up),
-                        iconSize: 48,
+                        iconSize: 36,
                         onPressed: () {
                           setState(() {
                             _isMuted = !_isMuted;
@@ -225,7 +214,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
                   // Volume slider
                   Row(
