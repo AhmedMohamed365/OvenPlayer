@@ -23,6 +23,15 @@ OvenSpace is a sub-second latency streaming demo service using [OvenMediaEngine]
 * Support Multiple Subtitle Formats
     * SMI, VTT, SRT
 
+## Packages
+
+OvenPlayer is available in multiple formats for different platforms and frameworks:
+
+* **JavaScript/TypeScript** - Core library (`ovenplayer`)
+* **React** - React component wrapper ([`packages/react`](packages/react))
+* **Vue.js** - Vue 3 component wrapper ([`packages/vue3`](packages/vue3))
+* **Flutter Web** - Flutter web component wrapper ([`packages/flutter_web`](packages/flutter_web))
+
 ## Quick Start
 Please read the [Quick Start](https://airensoft.gitbook.io/ovenplayer/#quick-start).
 
