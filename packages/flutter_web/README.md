@@ -201,6 +201,13 @@ controller.onSourceChanged = (source) { /* Source switched */ };
 controller.onQualityLevelChanged = (quality) { /* Quality changed */ };
 ```
 
+## Documentation
+
+- [Getting Started Guide](doc/getting_started.md) - Step-by-step tutorial
+- [API Reference](doc/api_reference.md) - Complete API documentation
+- [WebRTC Setup Guide](doc/webrtc_setup.md) - WebRTC configuration and troubleshooting
+- [Example App](example/) - Complete working example
+
 ## Example
 
 Check out the [example](example/) directory for a complete working example.
@@ -213,7 +220,7 @@ Check out the [example](example/) directory for a complete working example.
 
 ## License
 
-This package is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.
+This package is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Related Projects
 
