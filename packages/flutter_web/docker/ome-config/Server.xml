@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Server version="8">
+    <Name>OvenMediaEngine</Name>
+    <IP>*</IP>
+    <PrivacyProtection>false</PrivacyProtection>
+
+    <Bind>
+        <Providers>
+            <RTMP>
+                <Port>1935</Port>
+            </RTMP>
+        </Providers>
+
+        <Publishers>
+            <WebRTC>
+                <Signalling>
+                    <Port>3333</Port>
+                </Signalling>
+                <IceCandidates>
+                    <IceCandidate>*:10000-10009/udp</IceCandidate>
+                </IceCandidates>
+            </WebRTC>
+            <HLS>
+                <Port>8080</Port>
+            </HLS>
+            <LLHLS>
+                <Port>9000</Port>
+            </LLHLS>
+        </Publishers>
+    </Bind>
+
+    <VirtualHosts>
+        <VirtualHost>
+            <Name>default</Name>
+
+            <Applications>
+                <Application>
+                    <Name>app</Name>
+                    <Type>live</Type>
+
+                    <Providers>
+                        <RTMP />
+                    </Providers>
+
+                    <Publishers>
+                        <WebRTC>
+                            <Timeout>30000</Timeout>
+                        </WebRTC>
+                        <HLS>
+                            <SegmentDuration>5</SegmentDuration>
+                            <SegmentCount>3</SegmentCount>
+                        </HLS>
+                        <LLHLS>
+                            <ChunkDuration>0.5</ChunkDuration>
+                        </LLHLS>
+                    </Publishers>
+                </Application>
+            </Applications>
+        </VirtualHost>
+    </VirtualHosts>
+</Server>

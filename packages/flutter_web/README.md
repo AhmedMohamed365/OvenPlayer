@@ -206,11 +206,28 @@ controller.onQualityLevelChanged = (quality) { /* Quality changed */ };
 - [Getting Started Guide](doc/getting_started.md) - Step-by-step tutorial
 - [API Reference](doc/api_reference.md) - Complete API documentation
 - [WebRTC Setup Guide](doc/webrtc_setup.md) - WebRTC configuration and troubleshooting
+- [Docker Setup Guide](DOCKER.md) - Docker deployment and demo
 - [Example App](example/) - Complete working example
 
 ## Example
 
 Check out the [example](example/) directory for a complete working example.
+
+## Quick Demo with Docker
+
+Run the demo instantly with Docker:
+
+```bash
+# Run Flutter demo only (connects to external WebRTC stream)
+docker-compose up flutter-demo
+
+# Or run with OvenMediaEngine server included
+docker-compose --profile with-ome up
+```
+
+Visit **http://localhost:8080** to see the demo.
+
+See [DOCKER.md](DOCKER.md) for detailed Docker setup instructions.
 
 ## Requirements
 

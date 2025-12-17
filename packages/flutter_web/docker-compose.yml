@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Flutter Web Demo Application
+  flutter-demo:
+    image: ghcr.io/cirruslabs/flutter:stable
+    container_name: ovenplayer_flutter_demo
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - flutter-pub-cache:/root/.pub-cache
+    ports:
+      - "8080:8080"
+    command: >
+      sh -c "
+      cd example &&
+      flutter pub get &&
+      flutter run -d web-server --web-port=8080 --web-hostname=0.0.0.0
+      "
+    networks:
+      - ovenplayer-network
+
+  # OvenMediaEngine for WebRTC streaming (optional - for testing)
+  ovenmediaengine:
+    image: airensoft/ovenmediaengine:latest
+    container_name: ovenmediaengine_server
+    ports:
+      - "1935:1935"    # RTMP
+      - "3333:3333"    # WebRTC signaling
+      - "3478:3478"    # TURN/STUN
+      - "8080:8080"    # HLS (conflicts with flutter-demo, adjust if needed)
+      - "9000:9000"    # LL-HLS/DASH
+      - "10000-10009:10000-10009/udp"  # WebRTC
+    environment:
+      - OME_HOST_IP=0.0.0.0
+    volumes:
+      - ./docker/ome-config:/opt/ovenmediaengine/bin/origin_conf
+      - ome-logs:/var/log/ovenmediaengine
+    networks:
+      - ovenplayer-network
+    profiles:
+      - with-ome  # Only start with --profile with-ome
+
+networks:
+  ovenplayer-network:
+    driver: bridge
+
+volumes:
+  flutter-pub-cache:
+  ome-logs:

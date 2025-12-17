@@ -54,7 +54,12 @@ class OvenPlayerController extends ChangeNotifier {
       // Get the container element
       final element = OvenPlayerJSHelper.getElementById(containerId);
       if (element == null) {
-        debugPrint('Container element not found: $containerId');
+        final errorMsg = 'Container element not found: $containerId';
+        debugPrint(errorMsg);
+        onError?.call(OvenPlayerError(
+          code: -1,
+          message: errorMsg,
+        ));
         return;
       }
 
@@ -70,132 +75,156 @@ class OvenPlayerController extends ChangeNotifier {
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
-      debugPrint('Error initializing OvenPlayer: $e');
+      final errorMsg = 'Error initializing OvenPlayer: $e';
+      debugPrint(errorMsg);
+      onError?.call(OvenPlayerError(
+        code: -2,
+        message: errorMsg,
+      ));
       rethrow;
     }
   }
+
+  /// Reinitialize the player (useful for recovering from errors)
+  Future<void> reinitialize() async {
+    if (_containerId == null) {
+      debugPrint('Cannot reinitialize: no container ID');
+      return;
+    }
+    
+    final containerId = _containerId!;
+    dispose();
+    
+    // Wait a bit for cleanup
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    initialize(containerId);
+  }
+
+  /// Store event listener references for cleanup
+  final Map<String, JSFunction> _eventListeners = {};
 
   /// Set up event listeners for player events
   void _setupEventListeners() {
     if (_playerInstance == null) return;
 
     // Ready event
-    _playerInstance!.on(
-      'ready'.toJS,
-      (() {
-        onReady?.call();
-      }).toJS,
-    );
+    final readyListener = (() {
+      onReady?.call();
+    }).toJS;
+    _eventListeners['ready'] = readyListener;
+    _playerInstance!.on('ready'.toJS, readyListener);
 
     // State changed event
-    _playerInstance!.on(
-      'stateChanged'.toJS,
-      ((JSAny? data) {
-        if (data != null && onStateChanged != null) {
-          final state = _parseState((data as JSString).toDart);
-          onStateChanged?.call(state);
-        }
-      }).toJS,
-    );
+    final stateChangedListener = ((JSAny? data) {
+      if (data != null && onStateChanged != null) {
+        final state = _parseState((data as JSString).toDart);
+        onStateChanged?.call(state);
+      }
+    }).toJS;
+    _eventListeners['stateChanged'] = stateChangedListener;
+    _playerInstance!.on('stateChanged'.toJS, stateChangedListener);
 
     // Error event
-    _playerInstance!.on(
-      'error'.toJS,
-      ((JSAny? data) {
-        if (data != null && onError != null) {
-          final errorData = OvenPlayerJSHelper.jsAnyToDart(data);
-          if (errorData is Map<String, dynamic>) {
-            onError?.call(OvenPlayerError.fromJson(errorData));
-          }
+    final errorListener = ((JSAny? data) {
+      if (data != null && onError != null) {
+        final errorData = OvenPlayerJSHelper.jsAnyToDart(data);
+        if (errorData is Map<String, dynamic>) {
+          onError?.call(OvenPlayerError.fromJson(errorData));
         }
-      }).toJS,
-    );
+      }
+    }).toJS;
+    _eventListeners['error'] = errorListener;
+    _playerInstance!.on('error'.toJS, errorListener);
 
     // Meta changed event
-    _playerInstance!.on(
-      'metaChanged'.toJS,
-      ((JSAny? data) {
-        if (data != null && onMetaChanged != null) {
-          final metaData = OvenPlayerJSHelper.jsAnyToDart(data);
-          if (metaData is Map<String, dynamic>) {
-            onMetaChanged?.call(OvenPlayerMetadata.fromJson(metaData));
-          }
+    final metaChangedListener = ((JSAny? data) {
+      if (data != null && onMetaChanged != null) {
+        final metaData = OvenPlayerJSHelper.jsAnyToDart(data);
+        if (metaData is Map<String, dynamic>) {
+          onMetaChanged?.call(OvenPlayerMetadata.fromJson(metaData));
         }
-      }).toJS,
-    );
+      }
+    }).toJS;
+    _eventListeners['metaChanged'] = metaChangedListener;
+    _playerInstance!.on('metaChanged'.toJS, metaChangedListener);
 
     // Time event
-    _playerInstance!.on(
-      'time'.toJS,
-      ((JSAny? data) {
-        if (data != null && onTime != null) {
-          final timeData = OvenPlayerJSHelper.jsAnyToDart(data);
-          if (timeData is Map<String, dynamic>) {
-            onTime?.call(OvenPlayerTimeData.fromJson(timeData));
-          }
+    final timeListener = ((JSAny? data) {
+      if (data != null && onTime != null) {
+        final timeData = OvenPlayerJSHelper.jsAnyToDart(data);
+        if (timeData is Map<String, dynamic>) {
+          onTime?.call(OvenPlayerTimeData.fromJson(timeData));
         }
-      }).toJS,
-    );
+      }
+    }).toJS;
+    _eventListeners['time'] = timeListener;
+    _playerInstance!.on('time'.toJS, timeListener);
 
     // Buffer changed event
-    _playerInstance!.on(
-      'bufferChanged'.toJS,
-      ((JSAny? data) {
-        if (data != null && onBufferChanged != null) {
-          final bufferData = OvenPlayerJSHelper.jsAnyToDart(data);
-          if (bufferData is Map<String, dynamic>) {
-            onBufferChanged?.call(OvenPlayerBufferData.fromJson(bufferData));
-          }
+    final bufferChangedListener = ((JSAny? data) {
+      if (data != null && onBufferChanged != null) {
+        final bufferData = OvenPlayerJSHelper.jsAnyToDart(data);
+        if (bufferData is Map<String, dynamic>) {
+          onBufferChanged?.call(OvenPlayerBufferData.fromJson(bufferData));
         }
-      }).toJS,
-    );
+      }
+    }).toJS;
+    _eventListeners['bufferChanged'] = bufferChangedListener;
+    _playerInstance!.on('bufferChanged'.toJS, bufferChangedListener);
 
     // Volume changed event
-    _playerInstance!.on(
-      'volumeChanged'.toJS,
-      ((JSAny? data) {
-        if (data != null && onVolumeChanged != null) {
-          final volumeData = OvenPlayerJSHelper.jsAnyToDart(data);
-          if (volumeData is Map<String, dynamic>) {
-            onVolumeChanged?.call(OvenPlayerVolumeData.fromJson(volumeData));
-          }
+    final volumeChangedListener = ((JSAny? data) {
+      if (data != null && onVolumeChanged != null) {
+        final volumeData = OvenPlayerJSHelper.jsAnyToDart(data);
+        if (volumeData is Map<String, dynamic>) {
+          onVolumeChanged?.call(OvenPlayerVolumeData.fromJson(volumeData));
         }
-      }).toJS,
-    );
+      }
+    }).toJS;
+    _eventListeners['volumeChanged'] = volumeChangedListener;
+    _playerInstance!.on('volumeChanged'.toJS, volumeChangedListener);
 
     // Source changed event
-    _playerInstance!.on(
-      'sourceChanged'.toJS,
-      ((JSAny? data) {
-        if (data != null && onSourceChanged != null) {
-          final sourceData = OvenPlayerJSHelper.jsAnyToDart(data);
-          if (sourceData is Map<String, dynamic>) {
-            onSourceChanged?.call(OvenPlayerSourceData.fromJson(sourceData));
-          }
+    final sourceChangedListener = ((JSAny? data) {
+      if (data != null && onSourceChanged != null) {
+        final sourceData = OvenPlayerJSHelper.jsAnyToDart(data);
+        if (sourceData is Map<String, dynamic>) {
+          onSourceChanged?.call(OvenPlayerSourceData.fromJson(sourceData));
         }
-      }).toJS,
-    );
+      }
+    }).toJS;
+    _eventListeners['sourceChanged'] = sourceChangedListener;
+    _playerInstance!.on('sourceChanged'.toJS, sourceChangedListener);
 
     // Quality level changed event
-    _playerInstance!.on(
-      'qualityLevelChanged'.toJS,
-      ((JSAny? data) {
-        if (data != null && onQualityLevelChanged != null) {
-          final qualityData = OvenPlayerJSHelper.jsAnyToDart(data);
-          if (qualityData is Map<String, dynamic>) {
-            onQualityLevelChanged?.call(OvenPlayerQualityData.fromJson(qualityData));
-          }
+    final qualityLevelChangedListener = ((JSAny? data) {
+      if (data != null && onQualityLevelChanged != null) {
+        final qualityData = OvenPlayerJSHelper.jsAnyToDart(data);
+        if (qualityData is Map<String, dynamic>) {
+          onQualityLevelChanged?.call(OvenPlayerQualityData.fromJson(qualityData));
         }
-      }).toJS,
-    );
+      }
+    }).toJS;
+    _eventListeners['qualityLevelChanged'] = qualityLevelChangedListener;
+    _playerInstance!.on('qualityLevelChanged'.toJS, qualityLevelChangedListener);
 
     // Complete event
-    _playerInstance!.on(
-      'complete'.toJS,
-      (() {
-        onComplete?.call();
-      }).toJS,
-    );
+    final completeListener = (() {
+      onComplete?.call();
+    }).toJS;
+    _eventListeners['complete'] = completeListener;
+    _playerInstance!.on('complete'.toJS, completeListener);
+  }
+
+  /// Clean up event listeners
+  void _cleanupEventListeners() {
+    if (_playerInstance == null) return;
+    
+    _eventListeners.forEach((eventName, listener) {
+      _playerInstance!.off(eventName.toJS, listener);
+    });
+    _eventListeners.clear();
   }
 
   /// Parse state string to enum
@@ -331,8 +360,42 @@ class OvenPlayerController extends ChangeNotifier {
     _playerInstance?.hideControls();
   }
 
+  /// Check if player is playing
+  bool get isPlaying => getState().toLowerCase() == 'playing';
+
+  /// Check if player is paused
+  bool get isPaused => getState().toLowerCase() == 'paused';
+
+  /// Check if player is in loading state
+  bool get isLoading => getState().toLowerCase() == 'loading';
+
+  /// Check if player has error
+  bool get hasError => getState().toLowerCase() == 'error';
+
+  /// Toggle play/pause
+  void togglePlayPause() {
+    if (isPlaying) {
+      pause();
+    } else {
+      play();
+    }
+  }
+
+  /// Get or set playback rate
+  double get playbackRate {
+    // OvenPlayer doesn't expose this directly, return 1.0 as default
+    return 1.0;
+  }
+
+  /// Set playback rate (if supported by underlying video element)
+  set playbackRate(double rate) {
+    // Note: This would require additional JS interop to access video element
+    debugPrint('Playback rate control not yet implemented in JS interop');
+  }
+
   @override
   void dispose() {
+    _cleanupEventListeners();
     _playerInstance?.remove();
     _playerInstance = null;
     _isInitialized = false;

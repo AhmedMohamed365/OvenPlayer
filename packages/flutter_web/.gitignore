@@ -31,6 +31,10 @@
 build/
 pubspec.lock
 
+# Docker related
+docker/ome-logs/
+.docker/
+
 # Android related
 **/android/**/gradle-wrapper.jar
 **/android/.gradle
