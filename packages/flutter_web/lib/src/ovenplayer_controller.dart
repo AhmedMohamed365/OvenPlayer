@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 import 'ovenplayer_config.dart';
@@ -330,58 +331,26 @@ class OvenPlayerController {
     if (jsObject == null) return {};
     
     try {
-      // Convert to JSON string and parse in Dart
+      // Convert to JSON string using JavaScript JSON.stringify
       final json = web.window.getProperty('JSON'.toJS) as JSObject;
       final stringifyMethod = json.getProperty('stringify'.toJS) as JSFunction;
       final jsonString = (stringifyMethod.callAsFunction(json, [jsObject].toJS) as JSString).toDart;
       
-      // Parse in Dart
-      return _parseJsonString(jsonString);
-    } catch (e) {
-      return {};
-    }
-  }
-
-  /// Simple JSON parser for basic types
-  Map<String, dynamic> _parseJsonString(String jsonString) {
-    // This is a simplified parser. In production, use dart:convert
-    // For now, we'll create a basic implementation
-    final map = <String, dynamic>{};
-    
-    try {
-      // Remove outer braces
-      var content = jsonString.trim();
-      if (content.startsWith('{')) content = content.substring(1);
-      if (content.endsWith('}')) content = content.substring(0, content.length - 1);
+      // Parse using Dart's built-in JSON decoder
+      final parsed = jsonDecode(jsonString);
       
-      // Split by commas (simplified, doesn't handle nested objects properly)
-      final pairs = content.split(',');
-      
-      for (final pair in pairs) {
-        final keyValue = pair.split(':');
-        if (keyValue.length == 2) {
-          var key = keyValue[0].trim().replaceAll('"', '');
-          var value = keyValue[1].trim().replaceAll('"', '');
-          
-          // Try to parse as number
-          if (int.tryParse(value) != null) {
-            map[key] = int.parse(value);
-          } else if (double.tryParse(value) != null) {
-            map[key] = double.parse(value);
-          } else if (value == 'true') {
-            map[key] = true;
-          } else if (value == 'false') {
-            map[key] = false;
-          } else {
-            map[key] = value;
-          }
-        }
+      // Ensure we return a Map<String, dynamic>
+      if (parsed is Map<String, dynamic>) {
+        return parsed;
+      } else if (parsed is Map) {
+        return Map<String, dynamic>.from(parsed);
       }
+      
+      return {};
     } catch (e) {
       // Return empty map on error
+      return {};
     }
-    
-    return map;
   }
 
   /// Dispose the controller and close streams

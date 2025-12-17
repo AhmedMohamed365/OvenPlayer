@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui_web' as ui_web;
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
 import 'ovenplayer_config.dart';
 import 'ovenplayer_controller.dart';
 
@@ -70,21 +72,20 @@ class _OvenPlayerState extends State<OvenPlayer> {
     ui_web.platformViewRegistry.registerViewFactory(
       _viewId,
       (int viewId) {
-        final element = _createPlayerContainer();
-        return element;
+        return _createPlayerContainer();
       },
     );
     
     _isRegistered = true;
   }
 
-  dynamic _createPlayerContainer() {
-    // Create a div element for the player
-    final element = js_create_element('div');
-    js_set_attribute(element, 'id', _viewId);
-    js_set_style(element, 'width', '100%');
-    js_set_style(element, 'height', '100%');
-    js_set_style(element, 'position', 'relative');
+  web.HTMLDivElement _createPlayerContainer() {
+    // Create a div element for the player using web package
+    final element = web.document.createElement('div') as web.HTMLDivElement;
+    element.id = _viewId;
+    element.style.width = '100%';
+    element.style.height = '100%';
+    element.style.position = 'relative';
     return element;
   }
 
@@ -140,44 +141,4 @@ class _OvenPlayerState extends State<OvenPlayer> {
     // If no width is specified, use a reasonable default
     return 400.0;
   }
-}
-
-// Helper functions for DOM manipulation using dart:js_interop
-@pragma('dart:js_interop')
-dynamic js_create_element(String tagName) {
-  return js_invoke('document.createElement', [tagName]);
-}
-
-@pragma('dart:js_interop')
-void js_set_attribute(dynamic element, String name, String value) {
-  js_invoke_method(element, 'setAttribute', [name, value]);
-}
-
-@pragma('dart:js_interop')
-void js_set_style(dynamic element, String property, String value) {
-  final style = js_get_property(element, 'style');
-  js_set_property(style, property, value);
-}
-
-@pragma('dart:js_interop')
-dynamic js_get_property(dynamic object, String property) {
-  // This is a placeholder - actual implementation would use dart:js_interop
-  return null;
-}
-
-@pragma('dart:js_interop')
-void js_set_property(dynamic object, String property, dynamic value) {
-  // This is a placeholder - actual implementation would use dart:js_interop
-}
-
-@pragma('dart:js_interop')
-dynamic js_invoke(String method, List<dynamic> args) {
-  // This is a placeholder - actual implementation would use dart:js_interop
-  return null;
-}
-
-@pragma('dart:js_interop')
-dynamic js_invoke_method(dynamic object, String method, List<dynamic> args) {
-  // This is a placeholder - actual implementation would use dart:js_interop
-  return null;
 }
