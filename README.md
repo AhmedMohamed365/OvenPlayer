@@ -33,6 +33,27 @@ Please read the [Quick Start](https://airensoft.gitbook.io/ovenplayer/#quick-sta
 ## API and Configuration
 Start the [Demo](https://demo.ovenplayer.com) and see [API and Configuration](https://airensoft.gitbook.io/ovenplayer/initialization) for more details.
 
+## Framework Packages
+
+OvenPlayer is available as reusable components for popular frameworks:
+
+### Flutter Web
+A complete Flutter Web wrapper for building video streaming applications with WebRTC and LLHLS support.
+- **Location**: [packages/flutter_web](packages/flutter_web/)
+- **Package**: `ovenplayer_flutter_web`
+- **Features**: Native Dart/Flutter integration, full controller API, comprehensive event handling
+- **Documentation**: [Getting Started](packages/flutter_web/doc/getting_started.md) | [API Reference](packages/flutter_web/doc/api_reference.md) | [WebRTC Setup](packages/flutter_web/doc/webrtc_setup.md)
+
+### React
+Reusable OvenPlayer component for React.js applications.
+- **Location**: [packages/react](packages/react/)
+- **Package**: `ovenplayer-react`
+
+### Vue 3
+Reusable OvenPlayer component for Vue.js 3 applications.
+- **Location**: [packages/vue3](packages/vue3/)
+- **Package**: `ovenplayer-vue3`
+
 ## Build the source code
 Check out [Build](https://airensoft.gitbook.io/ovenplayer/builds) section how to create `ovenplayer.js` for deployment or development after modifying the source code.
 

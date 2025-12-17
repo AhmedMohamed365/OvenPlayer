@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!DOCKER.md
+docs/
+doc/
+
+# Build artifacts
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Logs
+*.log
+docker/ome-logs/
+
+# Misc
+.DS_Store
+*.swp
