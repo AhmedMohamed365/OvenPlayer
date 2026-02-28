@@ -1,3 +1,8 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
 # this is local development directory
 local
 dev

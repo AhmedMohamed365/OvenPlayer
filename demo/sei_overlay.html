@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEI AI Metadata Overlay Demo – OvenPlayer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      gap: 12px;
+      min-height: 100vh;
+    }
+
+    h1 { font-size: 1.2rem; letter-spacing: 0.05em; }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      background: #222;
+      padding: 10px 16px;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 960px;
+    }
+
+    #controls label { font-size: 0.85rem; color: #aaa; }
+
+    #usecase {
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #333;
+      color: #eee;
+      border: 1px solid #555;
+      font-size: 0.9rem;
+    }
+
+    #wrap {
+      position: relative;
+      width: 960px;
+      max-width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    #v, #c {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #c { pointer-events: none; }
+
+    #status {
+      font-size: 0.78rem;
+      color: #888;
+      align-self: flex-start;
+      max-width: 960px;
+      width: 100%;
+    }
+
+    #log {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 8px 12px;
+      max-width: 960px;
+      width: 100%;
+      font-size: 0.75rem;
+      font-family: monospace;
+      color: #7ec87e;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>H.264 SEI AI Metadata Overlay – WebRTC Demo</h1>
+
+  <div id="controls">
+    <label for="wsUrl">WebSocket URL:</label>
+    <input id="wsUrl" type="text" value="wss://your-ome-server/app/stream"
+           style="flex:1;min-width:260px;padding:4px 8px;background:#333;color:#eee;border:1px solid #555;border-radius:4px;">
+
+    <button id="btnConnect"
+            style="padding:6px 16px;background:#e85d04;border:none;color:#fff;border-radius:4px;cursor:pointer;">
+      Connect
+    </button>
+
+    <label for="usecase">Use-case filter:</label>
+    <select id="usecase">
+      <option value="all">all</option>
+    </select>
+  </div>
+
+  <div id="wrap">
+    <video id="v" autoplay muted playsinline></video>
+    <canvas id="c" width="960" height="540"></canvas>
+  </div>
+
+  <div id="status">Not connected.</div>
+  <div id="log"></div>
+
+  <!-- OvenPlayer (served from ../dist/ relative to this demo directory) -->
+  <script src="../dist/ovenplayer.js"></script>
+
+  <script>
+    // -------------------------------------------------------------------------
+    // DOM refs
+    // -------------------------------------------------------------------------
+    const canvas   = document.getElementById('c');
+    const ctx      = canvas.getContext('2d');
+    const usecaseSel = document.getElementById('usecase');
+    const statusEl = document.getElementById('status');
+    const logEl    = document.getElementById('log');
+    const btnConnect = document.getElementById('btnConnect');
+    const wsUrlInput = document.getElementById('wsUrl');
+
+    const MAX_LOG_ENTRIES = 60;
+
+    // -------------------------------------------------------------------------
+    // Logging helper
+    // -------------------------------------------------------------------------
+    function log(msg) {
+      const line = document.createElement('div');
+      line.textContent = `[${new Date().toISOString().slice(11,23)}] ${msg}`;
+      logEl.prepend(line);
+      if (logEl.children.length > MAX_LOG_ENTRIES) logEl.lastElementChild.remove();
+    }
+
+    // -------------------------------------------------------------------------
+    // Use-case filter population
+    // -------------------------------------------------------------------------
+    const knownUsecases = new Set();
+
+    function ensureUsecaseOption(id) {
+      if (knownUsecases.has(id)) return;
+      knownUsecases.add(id);
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = id;
+      usecaseSel.appendChild(opt);
+    }
+
+    // -------------------------------------------------------------------------
+    // Overlay rendering
+    // -------------------------------------------------------------------------
+    const COLORS = ['#ff4d4d', '#4dffb0', '#4db8ff', '#ffdd4d', '#cc4dff', '#ff994d'];
+    const usecaseColors = {};
+    let colorIndex = 0;
+
+    function colorForUsecase(id) {
+      if (!usecaseColors[id]) {
+        usecaseColors[id] = COLORS[colorIndex++ % COLORS.length];
+      }
+      return usecaseColors[id];
+    }
+
+    function renderOverlay(usecases) {
+      // Match canvas size to rendered video size
+      const videoEl = document.getElementById('v');
+      const vw = videoEl.videoWidth  || canvas.width;
+      const vh = videoEl.videoHeight || canvas.height;
+      const cw = canvas.clientWidth  || canvas.width;
+      const ch = canvas.clientHeight || canvas.height;
+
+      canvas.width  = cw;
+      canvas.height = ch;
+
+      const scaleX = cw / vw;
+      const scaleY = ch / vh;
+
+      ctx.clearRect(0, 0, cw, ch);
+
+      const filter = usecaseSel.value;
+
+      usecases.forEach(usecase => {
+        if (filter !== 'all' && usecase.id !== filter) return;
+
+        const color = colorForUsecase(usecase.id);
+        ctx.strokeStyle = color;
+        ctx.lineWidth   = 2;
+        ctx.fillStyle   = color;
+        ctx.font        = 'bold 13px system-ui, sans-serif';
+
+        (usecase.objects || []).forEach(obj => {
+          const x = Math.round(obj.x * scaleX);
+          const y = Math.round(obj.y * scaleY);
+          const w = Math.round(obj.w * scaleX);
+          const h = Math.round(obj.h * scaleY);
+
+          ctx.strokeRect(x, y, w, h);
+
+          // score is expected in the range [0, 1] as emitted by the fake_rtsp_generator
+          const label = (typeof obj.score === 'number' && obj.score <= 1)
+            ? `${obj.label} ${(obj.score * 100).toFixed(0)}%`
+            : String(obj.label);
+
+          const textY = y > 18 ? y - 4 : y + h + 14;
+          ctx.fillText(`[${usecase.id}] ${label}`, x + 2, textY);
+        });
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // OvenPlayer setup
+    // -------------------------------------------------------------------------
+    let player = null;
+
+    function createPlayer(wsUrl) {
+      if (player) {
+        player.remove();
+        player = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      statusEl.textContent = `Connecting to ${wsUrl} …`;
+      log(`Connecting: ${wsUrl}`);
+
+      player = OvenPlayer.create('v', {
+        autoStart: true,
+        mute: true,
+        sources: [{ type: 'webrtc', file: wsUrl }],
+        parseStream: { enabled: true }
+      });
+
+      player.on('stateChanged', (e) => {
+        statusEl.textContent = `State: ${e.newstate}`;
+        log(`State → ${e.newstate}`);
+      });
+
+      player.on('error', (e) => {
+        statusEl.textContent = `Error: ${e.message || JSON.stringify(e)}`;
+        log(`Error: ${e.message || JSON.stringify(e)}`);
+      });
+
+      // SEI metadata event emitted by RTCTransform.worker.js → WebRTC.js
+      player.on('metaData', (event) => {
+        if (event.type !== 'sei') return;
+
+        const aiMeta = event.aiMetadata;
+        if (!aiMeta || !Array.isArray(aiMeta.usecases)) return;
+
+        // Populate filter dropdown dynamically
+        aiMeta.usecases.forEach(uc => ensureUsecaseOption(uc.id));
+
+        // Render overlay
+        renderOverlay(aiMeta.usecases);
+
+        // Log occasionally (every 30 frames ≈ 1 s)
+        if (typeof aiMeta.ts === 'number' && aiMeta.ts % 30 === 0) {
+          const totalObjects = aiMeta.usecases.reduce((s, uc) => s + (uc.objects || []).length, 0);
+          log(`SEI frame ts=${aiMeta.ts}  v=${aiMeta.v}  usecases=${aiMeta.usecases.length}  objects=${totalObjects}`);
+        }
+      });
+    }
+
+    btnConnect.addEventListener('click', () => {
+      const wsUrl = wsUrlInput.value.trim();
+      if (!wsUrl) return;
+      createPlayer(wsUrl);
+    });
+
+    log('Ready. Enter a WebRTC URL and click Connect.');
+  </script>
+</body>
+</html>
